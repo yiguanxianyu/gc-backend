@@ -1,0 +1,9 @@
+pynvml
+psutil
+send2trash
+flask
+flask_cors
+flask-socketio
+joblib
+scikit-image
+rasterio
