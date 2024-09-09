@@ -3,16 +3,14 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_file
 
-from algorithms.algorithm import get_algorithms
+from algorithms.algorithm import get_algorithms, get_algorithm_dict
 from utils.raster2preview import get_tiff_extent
 from utils.util import (
-    get_abs_path,
     generate_input_tree,
     get_directory_new as get_directory,
     get_file_list,
     get_system_utilization,
-    is_raster,
-    is_vector,
+    remove_path,
 )
 
 api = Blueprint("item", __name__)
@@ -30,8 +28,6 @@ def get_thumbnail():
         "path": path,
     }"""
     path = request.args.get("path")
-    # abs_path = get_abs_path(path)
-    # thumbnail_path = get_preview(abs_path)
     thumbnail_path = Path(path).with_suffix(".png")
     return send_file(thumbnail_path)
 
@@ -78,11 +74,17 @@ def get_algo():
     return jsonify(result)
 
 
-# @api.route("/post/remove", methods=["POST"])
-# def post_remove():
-#     data = request.get_json()
-#     result = remove_path(data["path"])
-#     return jsonify(result)
+@api.route("/get/algorithms_dict/", methods=["GET"])
+def get_algo_dict():
+    result = get_algorithm_dict()
+    return jsonify(result)
+
+
+@api.route("/post/remove", methods=["POST"])
+def post_remove():
+    data = request.get_json()
+    result = remove_path(data["path"])
+    return jsonify(result)
 
 
 # @api.route("/post/rename", methods=["POST"])

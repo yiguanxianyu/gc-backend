@@ -22,7 +22,9 @@ def handle_task(args):
     print(args)
 
     input_path = args["path"]
-    output_path = input_path.replace("INPUT", "OUTPUT")
+    output_path = input_path.replace("INPUT", "OUTPUT").replace(
+        "general", args["algo-key"]
+    )
     input_path = Path(input_path).resolve()
     output_path = Path(output_path).resolve()
     output_path.mkdir(parents=True, exist_ok=True)
@@ -35,7 +37,8 @@ def handle_task(args):
     #     ["python", "-u", "proc.py"],
     #     stdout=subprocess.PIPE,
     #     stderr=subprocess.PIPE,
-    #     text=True
+    #     text=True,
+    #     encoding="gbk",
     # )
 
     while True:

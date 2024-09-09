@@ -1,4 +1,3 @@
-import json
 import subprocess
 from pathlib import Path
 
@@ -22,9 +21,7 @@ def get_tiff_extent(input_tiff: Path):
     with rasterio.open(input_tiff) as dataset:
         bounds = dataset.bounds
         trans = Transformer.from_crs(dataset.crs, "EPSG:3857", always_xy=True)
-        extent = trans.transform_bounds(
-            bounds.left, bounds.bottom, bounds.right, bounds.top
-        )
+        extent = trans.transform_bounds(bounds.left, bounds.bottom, bounds.right, bounds.top)
     return extent
 
 
@@ -35,16 +32,16 @@ def get_preview(input_tiff: Path):
             return preview_path
 
 
-def is_raster(path):
-    return Path(path).suffix.lower() in config.raster_ext
+# def is_raster(path):
+#     return Path(path).suffix.lower() in config.raster_ext
 
 
-def is_vector(path):
-    return Path(path).suffix.lower() in config.vector_ext
+# def is_vector(path):
+#     return Path(path).suffix.lower() in config.vector_ext
 
 
-def get_abs_path(path):
-    return config.data_dir.parent / path
+# def get_abs_path(path):
+#     return config.data_dir.parent / path
 
 
 def read_text(path: Path):
@@ -57,7 +54,7 @@ def read_text(path: Path):
 
 
 def generate_file_tree(root_dir):
-    def scan_directory(directory):
+    def scan_directory(directory: Path):
         tree = {
             "key": directory.resolve().as_posix(),
             "label": directory.name,
@@ -85,12 +82,13 @@ def generate_file_tree(root_dir):
 
 def get_directory_new(algorithms):
     data_dir = {}
-    root = Path(config.data_dir) / "output"
+    root = Path(config.data_dir) / "OUTPUT"
 
     for algorithm_group in algorithms:
-        path_group = Path(algorithm_group["folder"])
+        path_group = Path(algorithm_group["output_folder"])
         for algorithm in algorithm_group["children"]:
-            dir = root / path_group / algorithm["folder"]
+            dir = root / path_group / algorithm["output_folder"]
+            dir.mkdir(parents=True, exist_ok=True)
             tree = generate_file_tree(dir)
 
             data_dir[algorithm["key"]] = tree
@@ -122,9 +120,9 @@ def generate_input_tree(algorithms):
     root = Path(config.data_dir) / "INPUT"
 
     for algorithm_group in algorithms:
-        path_group = root / algorithm_group["folder"]
+        path_group = root / algorithm_group["input_folder"]
         for algorithm in algorithm_group["children"]:
-            dir = path_group / algorithm["folder"]
+            dir = path_group / algorithm["input_folder"]
             depth = depth_data.index(algorithm["timeType"])
             tree = scan_directory(dir, depth)
             input_data[algorithm["key"]] = tree.setdefault("children", [])
@@ -133,15 +131,21 @@ def generate_input_tree(algorithms):
     return input_data, info_txt_dict
 
 
-def rename_path(old_path, new_name):
-    dest_path = get_abs_path(old_path)
-    Path(dest_path).rename(dest_path.parent / new_name)
+# def rename_path(old_path, new_name):
+#     dest_path = get_abs_path(old_path)
+#     Path(dest_path).rename(dest_path.parent / new_name)
 
 
 def remove_path(file_path):
-    dest_path = get_abs_path(file_path)
-    print("Removing:", dest_path)
-    send2trash(dest_path)
+    path = Path(file_path)
+    if not path.exists():
+        return
+    elif path.is_dir():
+        send2trash(path)
+    elif path.is_file():
+        for i in path.parent.glob(path.stem + ".*"):
+            send2trash(i)
+            print("Removing:", i)
 
 
 def get_file_list(path: str):
@@ -175,10 +179,11 @@ def get_system_utilization():
             ],
             capture_output=True,
             text=True,
-        ).stdout.replace("\n", "")
-        gpu_usage_value = float(gpu_usage)
+        ).stdout.splitlines()
 
-        gpu_memory = subprocess.run(
+        gpu_usage_value = round(sum([float(i) for i in gpu_usage]) / len(gpu_usage))
+
+        gpu_memory_query = subprocess.run(
             [
                 "nvidia-smi",
                 "--query-gpu=memory.used,memory.total",
@@ -186,11 +191,14 @@ def get_system_utilization():
             ],
             capture_output=True,
             text=True,
-        ).stdout.replace("\n", "")
-        gpu_memory = gpu_memory.split(", ")
-        gpu_usage_memory_value = round(
-            float(gpu_memory[0]) / float(gpu_memory[1]) * 100
-        )
+        ).stdout.splitlines()
+
+        total_used_memory, total_memory = 0, 0
+        for used_memory, memory in (line.split(",") for line in gpu_memory_query):
+            total_used_memory += float(used_memory)
+            total_memory += float(memory)
+
+        gpu_usage_memory_value = round(total_used_memory / total_memory * 100)
 
     else:
         gpu_usage_value = "N/A"
