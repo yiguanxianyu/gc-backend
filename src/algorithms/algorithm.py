@@ -22,18 +22,23 @@ def get_algorithm_dict() -> dict:
 def get_algorithm_import(algorithm_name: str) -> dict:
     dest = None
     match algorithm_name:
+        case "lucc":
+            from algorithms.LiJunLi import predict_all as dest
         case "LST":
             from algorithms.GuoHao import LST as dest
         case "SME":
             from algorithms.GuoHao import SME as dest
         case "SWE":
             from algorithms.GuoHao import SWE as dest
-        case "AGB" | "SS" | "FVC" | "LAI":
-            from algorithms.MaYongGang.run_general import Runner
+        case "modis-wt4":
+            from algorithms.DuanHongTao import MODIS_WT4 as dest
 
-            dest = Runner(algorithm_name)
         case "lake-chla" | "lake-sdd" | "lake-tsm":
             from algorithms.DuanHongTao.hydro_env import Runner
+
+            dest = Runner(algorithm_name)
+        case "AGB" | "SS" | "FVC" | "LAI":
+            from algorithms.MaYongGang.run_general import Runner
 
             dest = Runner(algorithm_name)
 

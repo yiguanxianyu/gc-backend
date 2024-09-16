@@ -21,7 +21,9 @@ def get_tiff_extent(input_tiff: Path):
     with rasterio.open(input_tiff) as dataset:
         bounds = dataset.bounds
         trans = Transformer.from_crs(dataset.crs, "EPSG:3857", always_xy=True)
-        extent = trans.transform_bounds(bounds.left, bounds.bottom, bounds.right, bounds.top)
+        extent = trans.transform_bounds(
+            bounds.left, bounds.bottom, bounds.right, bounds.top
+        )
     return extent
 
 
